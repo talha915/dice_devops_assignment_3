@@ -1,5 +1,6 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI   # type: ignore
+from fastapi.middleware.cors import CORSMiddleware   # type: ignore
+
 app = FastAPI()
 
 app.add_middleware(
@@ -9,6 +10,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 async def main():
