@@ -1,0 +1,42 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - staging
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy Docker image to EC2
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+        REMOTE_HOST: ${{ secrets.HOST_DNS }}
+        REMOTE_USER: ${{ secrets.USERNAME }}
+        TARGET: ${{ secrets.TARGET_DIR }}
+      with:
+        local_path: ./
+        remote_path: /tmp/deploy  # Temporary directory if needed for deployment files
+
+    - name: Executing remote ssh commands using ssh key
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST_DNS }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          echo "Stopping existing Docker container..."
+          docker stop my-app || true
+          docker rm my-app || true
+          echo "Pulling new Docker image..."
+          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
+          echo "Starting new Docker container..."
+          docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
