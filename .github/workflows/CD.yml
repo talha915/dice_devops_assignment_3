@@ -1,4 +1,4 @@
-name: CD
+name: Deploy to EC2
 
 on:
   push:
@@ -14,18 +14,21 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Deploy Docker image to EC2
-      uses: easingthemes/ssh-deploy@main
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-        REMOTE_HOST: ${{ secrets.HOST_DNS }}
-        REMOTE_USER: ${{ secrets.USERNAME }}
-        TARGET: ${{ secrets.TARGET_DIR }}
-      with:
-        local_path: ./
-        remote_path: /tmp/deploy  # Temporary directory if needed for deployment files
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest .
 
-    - name: Execute remote commands
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+    - name: Push Docker image to Docker Hub
+      run: |
+        docker push ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
+
+    - name: Deploy to EC2
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.HOST_DNS }}
@@ -33,10 +36,10 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           echo "Stopping existing Docker container..."
-          /usr/bin/docker stop my-app || true
-          /usr/bin/docker rm my-app || true
+          docker stop my-app || true
+          docker rm my-app || true
           echo "Pulling new Docker image..."
-          /usr/bin/docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
-          /usr/bin/docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
+          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
           echo "Starting new Docker container..."
-          /usr/bin/docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
+          docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
