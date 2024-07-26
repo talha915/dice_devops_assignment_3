@@ -25,7 +25,7 @@ jobs:
         local_path: ./
         remote_path: /tmp/deploy  # Temporary directory if needed for deployment files
 
-    - name: Executing remote ssh commands using ssh key
+    - name: Execute remote commands
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.HOST_DNS }}
@@ -33,10 +33,10 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           echo "Stopping existing Docker container..."
-          docker stop my-app || true
-          docker rm my-app || true
+          /usr/bin/docker stop my-app || true
+          /usr/bin/docker rm my-app || true
           echo "Pulling new Docker image..."
-          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
+          /usr/bin/docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
+          /usr/bin/docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
           echo "Starting new Docker container..."
-          docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
+          /usr/bin/docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
