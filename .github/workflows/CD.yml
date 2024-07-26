@@ -43,3 +43,4 @@ jobs:
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
           echo "Starting new Docker container..."
           docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_IMAGE_NAME }}:latest
+
